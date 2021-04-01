@@ -1,0 +1,28 @@
+{
+  "name": "city-explorer-app",
+  "version": "1.0.0",
+  "description": "lab06",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/malakMomani/city-explorer-app.git"
+  },
+  "keywords": [
+    "[]"
+  ],
+  "author": "Malak Al-Momani",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/malakMomani/city-explorer-app/issues"
+  },
+  "homepage": "https://github.com/malakMomani/city-explorer-app#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1"
+  }
+}
