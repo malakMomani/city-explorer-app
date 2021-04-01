@@ -25,7 +25,7 @@ function handleLocationRequest(req, res) {
   }
 
   const locationData = require('./data/location.json');
-  const location = new Location(locationData, query);
+  const location = new Location(locationData[0], query);
   res.status(200).send(location);
 }
 
@@ -36,7 +36,7 @@ function Location(data, query) {
   this.longitude = data.lon;
 }
 function handleWeatherRequest(req, res) {
-  const weatherData = ('./data/weather.json');
+  const weatherData = require('./data/weather.json');
   const weathers = [];
 
   weatherData.data.forEach(weather => {
