@@ -55,8 +55,8 @@ function handleWeatherRequest(req, res) {
   const url = `https://api.weatherbit.io/v2.0/forecast/daily?limit=8`;
   const queryObject = {
     key: WEATHER_API_KEY,
-    lat: req.query.lat,
-    lon: req.query.lon
+    lat: req.query.latitude,
+    lon: req.query.longitude
   }
 
   let i = 0;
