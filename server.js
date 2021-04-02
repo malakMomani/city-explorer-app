@@ -5,16 +5,33 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const superagent = require('superagent');
+const pg = require('pg');
 const { query } = require('express');
 
 
 const PORT = process.env.PORT;
+const ENV = process.env.ENV || 'DEP';
 const GEOCODE_API_KEY = process.env.GEOCODE_API_KEY;
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
 const PARK_API_KEY = process.env.PARK_API_KEY;
+const DATABASE_URL = process.env.DATABASE_URL;
+
+
 const app = express();
 app.use(cors());
 
+
+let client = '';
+if (ENV === 'DEV') {
+  client = new pg.Client({
+    connectionString: DATABASE_URL
+  });
+} else {
+  client = new pg.Client({
+    connectionString: DATABASE_URL,
+    ssl: {}
+  });
+}
 
 app.get('/location', handleLocationRequest);
 app.get('/weather', handleWeatherRequest);
@@ -24,23 +41,47 @@ app.use('*', (req, res) => {
 });
 
 function handleLocationRequest(req, res) {
+
   const query = req.query.city;
-  const url = `https://us1.locationiq.com/v1/search.php`;
-  const queryObject = {
-    key: GEOCODE_API_KEY,
-    q: query,
-    format: 'json'
-  }
+
   if (!query) {
     res.status(404).send('Sorry , No city was found !!');
   }
 
-  superagent.get(url).query(queryObject).then(resData => {
-    const locationInfo = new Location(resData.body[0], query);
-    res.status(200).send(locationInfo);
-  }).catch(error => {
-    console.error('Error', error);
-    res.status(404).send('Sorry , something went wrong');
+  // retrieve from DB to check
+  const selectValue = [query];
+  const selectQ = `select * from locations where search_query=$1;`
+
+  client.query(selectQ, selectValue).then(selectResult => {
+    if (selectResult.rows.length === 0) {
+      throw error;
+    }
+    res.status(200).send(selectResult.rows);
+  }).catch(() => {
+    getFromAPI(query).then(apiResult => {
+      const insertValues = [apiResult.search_query, apiResult.formatted_query, apiResult.latitude, apiResult.longitude];
+      const insertQ = `insert into locations (search_query, formatted_query, latitude, longitude) values ($1 ,$2, $3, $4);`;
+
+      client.query(insertQ, insertValues);
+      res.status(200).send(apiResult);
+    }).catch(error => {
+      console.error('ERROR IN API', error);
+    });
+  });
+}
+
+function getFromAPI(city) {
+
+  const queryObject = {
+    key: GEOCODE_API_KEY,
+    q: city,
+    format: 'json'
+  }
+  const url = `https://us1.locationiq.com/v1/search.php`;
+
+  return superagent.get(url).query(queryObject).then(resData => {
+    const locationInfo = new Location(resData.body[0], city);
+    return locationInfo;
   });
 }
 
@@ -91,20 +132,23 @@ function handleParkRequest(req, res) {
     });
     res.status(200).send(parks);
   }).catch(error => {
-    console.error('ERROR',error);
+    console.error('ERROR', error);
     res.status(404).send('Sorry , Something went wrong');
   });
 }
-function Park(park){
-  this.name=park.fullName;
-  this.address = park.addresses[0].line1 +', '+park.addresses[0].city+', ' +park.addresses[0].stateCode+' '+ park.addresses[0].postalCode;
+function Park(park) {
+  this.name = park.fullName;
+  this.address = park.addresses[0].line1 + ', ' + park.addresses[0].city + ', ' + park.addresses[0].stateCode + ' ' + park.addresses[0].postalCode;
   //this.address = `${park.addresses[0].line3}, ${park.addresses[0].city}, ${park.addresses[0].stateCode} ${park.adresses[0].postalCode}`;
   this.description = park.description;
   this.fee = park.entranceFees[0].cost || 0.00;
   this.url = park.url;
-  
+
 }
 
-app.listen(PORT, () => {
-  console.log(`Listening to Port ${PORT}`);
-})
+client.connect().then(() => {
+  app.listen(PORT, () => {
+    console.log('Connected to database', client.connectionParameters.database);
+    console.log(`Listening to Port ${PORT}`);
+  });
+});
