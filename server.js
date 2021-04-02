@@ -21,21 +21,19 @@ const app = express();
 app.use(cors());
 
 
-let client = new pg.Client({
-  connectionString: DATABASE_URL,
-  ssl: {}
-});
-// let client = '';
-// if (ENV === 'DEV') {
-//   client = new pg.Client({
-//     connectionString: DATABASE_URL
-//   });
-// } else {
-//   client = new pg.Client({
-//     connectionString: DATABASE_URL,
-//     ssl: {}
-//   });
-// }
+let client = '';
+if (ENV === 'DEV') {
+  client = new pg.Client({
+    connectionString: DATABASE_URL
+  });
+} else {
+  client = new pg.Client({
+    connectionString: DATABASE_URL,
+    ssl: {
+      rejectUnauthorized : false
+    }
+  });
+}
 
 app.get('/location', handleLocationRequest);
 app.get('/weather', handleWeatherRequest);
