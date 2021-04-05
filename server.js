@@ -58,7 +58,7 @@ function handleLocationRequest(req, res) {
     if (selectResult.rows.length === 0) {
       throw error;
     }
-    res.status(200).send(selectResult.rows);
+    res.status(200).send(selectResult.rows[0]);
   }).catch(() => {
     getFromAPI(query).then(apiResult => {
       const insertValues = [apiResult.search_query, apiResult.formatted_query, apiResult.latitude, apiResult.longitude];
